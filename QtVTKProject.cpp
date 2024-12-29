@@ -31,11 +31,25 @@ QtVTKProject::~QtVTKProject()
 
 void QtVTKProject::onDrawCubeClick()
 {
-	vtkSmartPointer<vtkCubeSource> cubeSource = vtkSmartPointer<vtkCubeSource>::New();
-	cubeSource->SetXLength(1.0);
-	cubeSource->SetYLength(1.0);
-	cubeSource->SetZLength(1.0);
-	cubeSource->Update();
+	std::string dicomDirectory = "C:/DICOM/ScalarVolume_9/";
+
+	vtkSmartPointer<vtkDICOMImageReader> dicomReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+	dicomReader->SetDirectoryName(dicomDirectory.c_str());
+	dicomReader->Update();
+
+	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+	compositeOpacity->AddPoint(0.0, 0.0);
+	compositeOpacity->AddPoint(1232.0, 1.0);
+
+	vtkSmartPointer<vtkColorTransferFunction> color = vtkSmartPointer<vtkColorTransferFunction>::New();
+	color->AddRGBPoint(0.0, 0.0, 0.0, 0.0);
+	color->AddRGBPoint(255.0, 1.0, 1.0, 1.0);
+
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
+	volumeProperty->SetColor(color);
+	volumeProperty->SetScalarOpacity(compositeOpacity);
+	volumeProperty->ShadeOn();
+	volumeProperty->SetInterpolationTypeToLinear();
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(cubeSource->GetOutputPort());
