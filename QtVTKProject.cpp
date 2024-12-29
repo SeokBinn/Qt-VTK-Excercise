@@ -1,8 +1,16 @@
 #include "MainWindow.h"
 
-#include <vtkCubeSource.h>
 #include <vtkActor.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkDICOMImageReader.h>
+#include <vtkFixedPointVolumeRayCastMapper.h>
+#include <vtkSmartVolumeMapper.h>
+#include <vtkPiecewiseFunction.h>
+#include <vtkVolumeProperty.h>
+#include <vtkVolume.h>
+#include <vtkColorTransferFunction.h>
+
+
 
 QtVTKProject::QtVTKProject(QWidget *parent)
     : QMainWindow(parent)
@@ -23,13 +31,13 @@ QtVTKProject::QtVTKProject(QWidget *parent)
 
 	renderer->SetBackground(0.1, 0.2, 0.4);
 
-	QObject::connect(ui.drawCube_button, &QPushButton::clicked, this, &QtVTKProject::onDrawCubeClick);
+	QObject::connect(ui.loadDICOM_button, &QPushButton::clicked, this, &QtVTKProject::onLoadDICOMClicked);
 }
 
 QtVTKProject::~QtVTKProject()
 {}
 
-void QtVTKProject::onDrawCubeClick()
+void QtVTKProject::onLoadDICOMClicked()
 {
 	std::string dicomDirectory = "C:/DICOM/ScalarVolume_9/";
 
@@ -51,15 +59,17 @@ void QtVTKProject::onDrawCubeClick()
 	volumeProperty->ShadeOn();
 	volumeProperty->SetInterpolationTypeToLinear();
 
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(cubeSource->GetOutputPort());
+	vtkSmartPointer<vtkFixedPointVolumeRayCastMapper> volumeMapper = vtkSmartPointer<vtkFixedPointVolumeRayCastMapper>::New();
+	volumeMapper->SetInputConnection(dicomReader->GetOutputPort());
 
-	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
+	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
+	volume->SetMapper(volumeMapper);
+	volume->SetProperty(volumeProperty);
 
-	renderer->AddActor(actor);
+	renderer->AddVolume(volume);
 	renderer->ResetCamera();
-	renderWindow->Render();
+	renderer->Render();
+
 }
 
 void QtVTKProject::keyPressEvent(QKeyEvent* event)

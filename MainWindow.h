@@ -8,6 +8,12 @@
 #include <QVTKInteractor.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <QKeyEvent>
+#include <qfiledialog.h>
+#include <QDebug>
+#include <vtkAutoInit.h>
+#include <vtkRenderingVolumeOpenGL2Module.h>
+
+VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2)
 
 class QtVTKProject : public QMainWindow
 {
@@ -20,13 +26,14 @@ private:
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<QVTKInteractor> interactor;
     vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle;
+	QFileDialog* dicomFileDialog;
 
 public:
     QtVTKProject(QWidget *parent = nullptr);
     ~QtVTKProject();
 
 public slots:
-    void onDrawCubeClick();
+    void onLoadDICOMClicked();
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;

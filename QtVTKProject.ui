@@ -14,7 +14,7 @@
    <string>QtVTKProject</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QPushButton" name="drawCube_button">
+   <widget class="QPushButton" name="loadDICOM_button">
     <property name="geometry">
      <rect>
       <x>230</x>
@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Draw Cube</string>
+     <string>Load DICOM</string>
     </property>
    </widget>
    <widget class="QVTKOpenGLNativeWidget" name="openGLWidget">
