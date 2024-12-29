@@ -4,12 +4,12 @@
 #include <vtkPolyDataMapper.h>
 #include <vtkDICOMImageReader.h>
 #include <vtkFixedPointVolumeRayCastMapper.h>
+#include <vtkGPUVolumeRayCastMapper.h>
 #include <vtkSmartVolumeMapper.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
 #include <vtkVolume.h>
 #include <vtkColorTransferFunction.h>
-
 
 
 QtVTKProject::QtVTKProject(QWidget *parent)
@@ -39,10 +39,10 @@ QtVTKProject::~QtVTKProject()
 
 void QtVTKProject::onLoadDICOMClicked()
 {
-	std::string dicomDirectory = "C:/DICOM/ScalarVolume_9/";
+	QString directory = QFileDialog::getExistingDirectory(nullptr, "Select DICOM Directory", QString(), QFileDialog::ShowDirsOnly);
 
 	vtkSmartPointer<vtkDICOMImageReader> dicomReader = vtkSmartPointer<vtkDICOMImageReader>::New();
-	dicomReader->SetDirectoryName(dicomDirectory.c_str());
+	dicomReader->SetDirectoryName(directory.toStdString().c_str());
 	dicomReader->Update();
 
 	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
@@ -59,7 +59,7 @@ void QtVTKProject::onLoadDICOMClicked()
 	volumeProperty->ShadeOn();
 	volumeProperty->SetInterpolationTypeToLinear();
 
-	vtkSmartPointer<vtkFixedPointVolumeRayCastMapper> volumeMapper = vtkSmartPointer<vtkFixedPointVolumeRayCastMapper>::New();
+	vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
 	volumeMapper->SetInputConnection(dicomReader->GetOutputPort());
 
 	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();

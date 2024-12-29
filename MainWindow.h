@@ -11,7 +11,6 @@
 #include <qfiledialog.h>
 #include <QDebug>
 #include <vtkAutoInit.h>
-#include <vtkRenderingVolumeOpenGL2Module.h>
 
 VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2)
 
