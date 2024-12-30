@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <vtkAutoInit.h>
 
+
 VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2)
 
 class QtVTKProject : public QMainWindow
@@ -27,12 +28,18 @@ private:
     vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle;
 	QFileDialog* dicomFileDialog;
 
+    QVector<double> transferX, transferY;
+    double currentWidth;
+
 public:
     QtVTKProject(QWidget *parent = nullptr);
     ~QtVTKProject();
 
 public slots:
     void onLoadDICOMClicked();
+	void onMousePressinGraph(QMouseEvent* event);
+	void onMinValueChanged(int min);
+	void onMaxValueChanged(int max);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
