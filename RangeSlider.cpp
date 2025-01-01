@@ -23,7 +23,8 @@ RangeSlider::RangeSlider(QWidget* aParent)
       mBackgroudColorEnabled(QColor(0x1E, 0x90, 0xFF)),
       mBackgroudColorDisabled(Qt::darkGray),
       mBackgroudColor(mBackgroudColorEnabled),
-      orientation(Qt::Horizontal)
+      orientation(Qt::Horizontal),
+	  type(DoubleHandles)
 {
     setMouseTracking(true);
 }
