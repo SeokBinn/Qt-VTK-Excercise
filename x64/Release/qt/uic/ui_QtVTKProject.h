@@ -17,7 +17,9 @@
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QWidget>
+#include "qcustomplot.h"
 #include "qvtkopenglnativewidget.h"
+#include "rangeslider.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -27,6 +29,8 @@ public:
     QWidget *centralWidget;
     QPushButton *loadDICOM_button;
     QVTKOpenGLNativeWidget *openGLWidget;
+    QCustomPlot *transferFunctionWidget;
+    RangeSlider *xAxisRangeSlider;
     QMenuBar *menuBar;
     QStatusBar *statusBar;
     QToolBar *mainToolBar;
@@ -35,19 +39,25 @@ public:
     {
         if (QtVTKProjectClass->objectName().isEmpty())
             QtVTKProjectClass->setObjectName(QString::fromUtf8("QtVTKProjectClass"));
-        QtVTKProjectClass->resize(861, 522);
+        QtVTKProjectClass->resize(967, 515);
         centralWidget = new QWidget(QtVTKProjectClass);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         loadDICOM_button = new QPushButton(centralWidget);
         loadDICOM_button->setObjectName(QString::fromUtf8("loadDICOM_button"));
-        loadDICOM_button->setGeometry(QRect(130, 40, 80, 23));
+        loadDICOM_button->setGeometry(QRect(20, 10, 80, 23));
         openGLWidget = new QVTKOpenGLNativeWidget(centralWidget);
         openGLWidget->setObjectName(QString::fromUtf8("openGLWidget"));
-        openGLWidget->setGeometry(QRect(345, 38, 471, 410));
+        openGLWidget->setGeometry(QRect(460, 49, 471, 401));
+        transferFunctionWidget = new QCustomPlot(centralWidget);
+        transferFunctionWidget->setObjectName(QString::fromUtf8("transferFunctionWidget"));
+        transferFunctionWidget->setGeometry(QRect(20, 50, 431, 361));
+        xAxisRangeSlider = new RangeSlider(centralWidget);
+        xAxisRangeSlider->setObjectName(QString::fromUtf8("xAxisRangeSlider"));
+        xAxisRangeSlider->setGeometry(QRect(20, 420, 431, 31));
         QtVTKProjectClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(QtVTKProjectClass);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 861, 21));
+        menuBar->setGeometry(QRect(0, 0, 967, 21));
         QtVTKProjectClass->setMenuBar(menuBar);
         statusBar = new QStatusBar(QtVTKProjectClass);
         statusBar->setObjectName(QString::fromUtf8("statusBar"));

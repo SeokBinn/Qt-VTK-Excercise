@@ -11,7 +11,9 @@
 #include <qfiledialog.h>
 #include <QDebug>
 #include <vtkAutoInit.h>
-
+#include <vtkColorTransferFunction.h>
+#include <vtkGPUVolumeRayCastMapper.h>
+#include <vtkVolume.h>
 
 VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2)
 
@@ -26,10 +28,17 @@ private:
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<QVTKInteractor> interactor;
     vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle;
-	QFileDialog* dicomFileDialog;
+    
+    vtkSmartPointer<vtkColorTransferFunction> color;
+	vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapper;
+    vtkSmartPointer<vtkVolume> volume;
+    
+    QFileDialog* dicomFileDialog;
 
     QVector<double> transferX, transferY;
     double currentWidth;
+	int selectedPointIndex;
+	bool isDragging;
 
 public:
     QtVTKProject(QWidget *parent = nullptr);
@@ -37,11 +46,15 @@ public:
 
 public slots:
     void onLoadDICOMClicked();
-	void onMousePressinGraph(QMouseEvent* event);
+	void onMouseRightPressinGraph(QMouseEvent* event);
+	void onMouseLeftPressAndDraggedinGraph(QMouseEvent* event);
 	void onMinValueChanged(int min);
 	void onMaxValueChanged(int max);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
-
+	bool eventFilter(QObject* obj, QEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event);
+    void mouseReleaseEvent(QMouseEvent* event);
+	void updateVolumeRendering();
 };

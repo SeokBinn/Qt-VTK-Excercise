@@ -1,16 +1,12 @@
 #include "MainWindow.h"
-
 #include <vtkActor.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkDICOMImageReader.h>
 #include <vtkFixedPointVolumeRayCastMapper.h>
-#include <vtkGPUVolumeRayCastMapper.h>
 #include <vtkSmartVolumeMapper.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
-#include <vtkVolume.h>
 #include <vtkImageData.h>
-#include <vtkColorTransferFunction.h>
 
 
 QtVTKProject::QtVTKProject(QWidget *parent)
@@ -30,8 +26,8 @@ QtVTKProject::QtVTKProject(QWidget *parent)
 	interactor->SetInteractorStyle(interactorStyle);
 	interactor->Initialize();
 
-	//renderer->SetBackground(0.1, 0.2, 0.4);
-	renderer->SetBackground(1.0, 1.0, 1.0);
+	renderer->SetBackground(0.1, 0.2, 0.4);
+	//renderer->SetBackground(1.0, 1.0, 1.0);
 
 	QObject::connect(ui.loadDICOM_button, &QPushButton::clicked, this, &QtVTKProject::onLoadDICOMClicked);
 }
@@ -60,8 +56,9 @@ void QtVTKProject::onLoadDICOMClicked()
 	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
 	compositeOpacity->AddPoint(0.0, 0.0);
 	compositeOpacity->AddPoint((min + max) / 2, 1.0);
+	compositeOpacity->AddPoint(max, 1.0);
 
-	vtkSmartPointer<vtkColorTransferFunction> color = vtkSmartPointer<vtkColorTransferFunction>::New();
+	color = vtkSmartPointer<vtkColorTransferFunction>::New();
 	color->AddRGBPoint(0.0, 0.0, 0.0, 0.0);
 	color->AddRGBPoint(255.0, 1.0, 1.0, 1.0);
 
@@ -71,10 +68,10 @@ void QtVTKProject::onLoadDICOMClicked()
 	volumeProperty->ShadeOn();
 	volumeProperty->SetInterpolationTypeToLinear();
 
-	vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
+	volumeMapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
 	volumeMapper->SetInputData(imageData);
 
-	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
+	volume = vtkSmartPointer<vtkVolume>::New();
 	volume->SetMapper(volumeMapper);
 	volume->SetProperty(volumeProperty);
 
@@ -85,7 +82,7 @@ void QtVTKProject::onLoadDICOMClicked()
 	currentWidth = 500;
 
 	ui.transferFunctionWidget->xAxis->setRange(min, max);
-	ui.transferFunctionWidget->yAxis->setRange(0, 1);
+	ui.transferFunctionWidget->yAxis->setRange(-0.25, 1.25);
 
 	if (ui.transferFunctionWidget->graphCount() == 0)
 	{
@@ -103,17 +100,19 @@ void QtVTKProject::onLoadDICOMClicked()
 	ui.transferFunctionWidget->graph(0)->setScatterStyle(QCPScatterStyle::ssCircle);
 	ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
 	ui.transferFunctionWidget->setInteraction(QCP::iSelectPlottables, true);
-
+	
+	ui.transferFunctionWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+	ui.transferFunctionWidget->installEventFilter(this);
 	
 	ui.xAxisRangeSlider->SetRange(min, max);
 
-	connect(ui.transferFunctionWidget, &QCustomPlot::mousePress, this, &QtVTKProject::onMousePressinGraph);
+	connect(ui.transferFunctionWidget, &QCustomPlot::mousePress, this, &QtVTKProject::onMouseLeftPressAndDraggedinGraph);
+	connect(ui.transferFunctionWidget, &QCustomPlot::mousePress, this, &QtVTKProject::onMouseRightPressinGraph);
 	connect(ui.xAxisRangeSlider, &RangeSlider::lowerValueChanged, this, &QtVTKProject::onMinValueChanged);
 	connect(ui.xAxisRangeSlider, &RangeSlider::upperValueChanged, this, &QtVTKProject::onMaxValueChanged);
 
 	ui.transferFunctionWidget->replot();
 }
-
 
 void QtVTKProject::onMinValueChanged(int min)
 {
@@ -127,18 +126,130 @@ void QtVTKProject::onMaxValueChanged(int max)
 	ui.transferFunctionWidget->replot();
 }
 
-void QtVTKProject::onMousePressinGraph(QMouseEvent* event)
+void QtVTKProject::onMouseLeftPressAndDraggedinGraph(QMouseEvent* event)
 {
-	if (ui.transferFunctionWidget->graphCount() == 0) { return; }
+	if (event->button() == Qt::LeftButton)
+	{
+		double xPoint = ui.transferFunctionWidget->xAxis->pixelToCoord(event->pos().x());
+		double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
+		double minDistance = 30;
+		int minIndex = -1;
+		for (int i = 0; i < transferX.size(); i++)
+		{
+			double distance = sqrt(pow(transferX[i] - xPoint, 2) + pow(transferY[i] - yPoint, 2));
+			if (distance < minDistance)
+			{
+				minDistance = distance;
+				minIndex = i;
+			}
+		}
+		if (minIndex != -1)
+		{
+			selectedPointIndex = minIndex;
+			isDragging = true;
+		}
+	}
+}
 
-	double xPoint = ui.transferFunctionWidget->xAxis->pixelToCoord(event->pos().x());
-	double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
+void QtVTKProject::mouseMoveEvent(QMouseEvent* event)
+{
+	if (isDragging)
+	{
+		double xPoint = ui.transferFunctionWidget->xAxis->pixelToCoord(event->pos().x());
+		double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
 
-	transferX.push_back(xPoint);
-	transferY.push_back(yPoint);
+		if (yPoint < 0.0)
+		{
+			yPoint = 0.0;
+		}
+		if (yPoint > 1.0)
+		{
+			yPoint = 1.0;
+		}
 
-	ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
-	ui.transferFunctionWidget->replot();
+		transferX[selectedPointIndex] = xPoint;
+		transferY[selectedPointIndex] = yPoint;
+		ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
+		ui.transferFunctionWidget->replot();
+
+		updateVolumeRendering();
+	}
+}
+
+void QtVTKProject::mouseReleaseEvent(QMouseEvent* event)
+{
+	if (event->button() == Qt::LeftButton)
+	{
+		isDragging = false;
+	}
+}
+
+void QtVTKProject::onMouseRightPressinGraph(QMouseEvent* event)
+{
+	if (event->button() != Qt::RightButton) { return; }
+
+	QMenu menu;
+	QAction* addAction = menu.addAction("Add Point");
+	QAction* deleteAction = menu.addAction("Delete Point");
+	QAction* selectedItem = menu.exec(ui.transferFunctionWidget->mapToGlobal(event->pos()));
+	if (selectedItem == addAction)
+	{
+		double xPoint = ui.transferFunctionWidget->xAxis->pixelToCoord(event->pos().x());
+		double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
+		transferX.push_back(xPoint);
+		transferY.push_back(yPoint);
+		ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
+		ui.transferFunctionWidget->replot();
+
+		updateVolumeRendering();
+	}
+	else if (selectedItem == deleteAction)
+	{
+		if (transferX.size() == 3) { return; }
+		double xPoint = ui.transferFunctionWidget->xAxis->pixelToCoord(event->pos().x());
+		double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
+		
+		double minDistance = 30;
+		int minIndex = -1;
+		for (int i = 0; i < transferX.size(); i++)
+		{
+			double distance = sqrt(pow(transferX[i] - xPoint, 2) + pow(transferY[i] - yPoint, 2));
+			if (distance < minDistance)
+			{
+				minDistance = distance;
+				minIndex = i;
+			}
+		}
+		if (minIndex != -1)
+		{
+			transferX.erase(transferX.begin() + minIndex);
+			transferY.erase(transferY.begin() + minIndex);
+			ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
+			ui.transferFunctionWidget->replot();
+		}
+
+		updateVolumeRendering();
+	}
+}
+
+bool QtVTKProject::eventFilter(QObject* obj, QEvent* event)
+{
+	if (obj == ui.transferFunctionWidget)
+	{
+		if (event->type() == QEvent::MouseMove)
+		{
+			QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*>(event);
+			mouseMoveEvent(mouseEvent);
+			return true;
+		}
+		else if (event->type() == QEvent::MouseButtonRelease)
+		{
+			QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*>(event);
+			mouseReleaseEvent(mouseEvent);
+			return true;
+		}
+	}
+	return QMainWindow::eventFilter(obj, event);
 }
 
 void QtVTKProject::keyPressEvent(QKeyEvent* event)
@@ -148,3 +259,22 @@ void QtVTKProject::keyPressEvent(QKeyEvent* event)
 		QApplication::quit();
 	}
 }
+
+void QtVTKProject::updateVolumeRendering()
+{
+	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+	for (int i = 0; i < transferX.size(); i++)
+	{
+		compositeOpacity->AddPoint(transferX[i], transferY[i]);
+	}
+
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
+	volumeProperty->SetColor(color);
+	volumeProperty->SetScalarOpacity(compositeOpacity);
+	volumeProperty->ShadeOn();
+	volumeProperty->SetInterpolationTypeToLinear();
+
+	volume->SetMapper(volumeMapper);
+	volume->SetProperty(volumeProperty);
+	renderer->Render();
+}	
