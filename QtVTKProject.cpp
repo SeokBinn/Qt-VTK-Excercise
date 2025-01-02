@@ -30,6 +30,9 @@ QtVTKProject::QtVTKProject(QWidget *parent)
 	//renderer->SetBackground(1.0, 1.0, 1.0);
 
 	QObject::connect(ui.loadDICOM_button, &QPushButton::clicked, this, &QtVTKProject::onLoadDICOMClicked);
+
+	transferFunction = new TransferFunction(ui.transferFunctionWidget, this);
+	connect(transferFunction, &TransferFunction::plotValueChanged, this, &QtVTKProject::updateVolumeRendering);
 }
 
 QtVTKProject::~QtVTKProject()
@@ -41,7 +44,8 @@ void QtVTKProject::onLoadDICOMClicked()
 
 	if (directory.isEmpty()) { return; }
 
-	vtkSmartPointer<vtkDICOMImageReader> dicomReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+	vtkSmartPointer<vtkDICOMImageReader> dicomReader = 
+		vtkSmartPointer<vtkDICOMImageReader>::New();
 	dicomReader->SetDirectoryName(directory.toStdString().c_str());
 	dicomReader->Update();
 
@@ -53,7 +57,8 @@ void QtVTKProject::onLoadDICOMClicked()
 	double min = scalarRange[0];
 	double max = scalarRange[1];
 
-	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+	vtkSmartPointer<vtkPiecewiseFunction> compositeOpacity = 
+		vtkSmartPointer<vtkPiecewiseFunction>::New();
 	compositeOpacity->AddPoint(0.0, 0.0);
 	compositeOpacity->AddPoint((min + max) / 2, 1.0);
 	compositeOpacity->AddPoint(max, 1.0);
@@ -62,7 +67,8 @@ void QtVTKProject::onLoadDICOMClicked()
 	color->AddRGBPoint(0.0, 0.0, 0.0, 0.0);
 	color->AddRGBPoint(255.0, 1.0, 1.0, 1.0);
 
-	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = 
+		vtkSmartPointer<vtkVolumeProperty>::New();
 	volumeProperty->SetColor(color);
 	volumeProperty->SetScalarOpacity(compositeOpacity);
 	volumeProperty->ShadeOn();
@@ -98,7 +104,7 @@ void QtVTKProject::onLoadDICOMClicked()
 	transferY.push_back(1.0);
 
 	ui.transferFunctionWidget->graph(0)->setScatterStyle(QCPScatterStyle::ssCircle);
-	ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
+	transferFunction->updatePlot(transferX, transferY);
 	ui.transferFunctionWidget->setInteraction(QCP::iSelectPlottables, true);
 	
 	ui.transferFunctionWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -147,6 +153,7 @@ void QtVTKProject::onMouseLeftPressAndDraggedinGraph(QMouseEvent* event)
 		{
 			selectedPointIndex = minIndex;
 			isDragging = true;
+			event->accept();
 		}
 	}
 }
@@ -162,17 +169,16 @@ void QtVTKProject::mouseMoveEvent(QMouseEvent* event)
 		{
 			yPoint = 0.0;
 		}
-		if (yPoint > 1.0)
+		else if (yPoint > 1.0)
 		{
 			yPoint = 1.0;
 		}
 
 		transferX[selectedPointIndex] = xPoint;
 		transferY[selectedPointIndex] = yPoint;
-		ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
-		ui.transferFunctionWidget->replot();
 
-		updateVolumeRendering();
+		transferFunction->updatePlot(transferX, transferY);
+		event->accept();
 	}
 }
 
@@ -181,6 +187,7 @@ void QtVTKProject::mouseReleaseEvent(QMouseEvent* event)
 	if (event->button() == Qt::LeftButton)
 	{
 		isDragging = false;
+		event->accept();
 	}
 }
 
@@ -198,10 +205,9 @@ void QtVTKProject::onMouseRightPressinGraph(QMouseEvent* event)
 		double yPoint = ui.transferFunctionWidget->yAxis->pixelToCoord(event->pos().y());
 		transferX.push_back(xPoint);
 		transferY.push_back(yPoint);
-		ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
-		ui.transferFunctionWidget->replot();
+		transferFunction->updatePlot(transferX, transferY);
+		event->accept();
 
-		updateVolumeRendering();
 	}
 	else if (selectedItem == deleteAction)
 	{
@@ -224,11 +230,10 @@ void QtVTKProject::onMouseRightPressinGraph(QMouseEvent* event)
 		{
 			transferX.erase(transferX.begin() + minIndex);
 			transferY.erase(transferY.begin() + minIndex);
-			ui.transferFunctionWidget->graph(0)->setData(transferX, transferY);
-			ui.transferFunctionWidget->replot();
+			transferFunction->updatePlot(transferX, transferY);
+			event->accept();
 		}
 
-		updateVolumeRendering();
 	}
 }
 

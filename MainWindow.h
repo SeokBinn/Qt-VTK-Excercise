@@ -2,12 +2,12 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_QtVTKProject.h"
+#include "TransferFunction.h"
 
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderer.h>
 #include <QVTKInteractor.h>
 #include <vtkInteractorStyleTrackballCamera.h>
-#include <QKeyEvent>
 #include <qfiledialog.h>
 #include <QDebug>
 #include <vtkAutoInit.h>
@@ -39,6 +39,8 @@ private:
     double currentWidth;
 	int selectedPointIndex;
 	bool isDragging;
+
+    TransferFunction* transferFunction;
 
 public:
     QtVTKProject(QWidget *parent = nullptr);

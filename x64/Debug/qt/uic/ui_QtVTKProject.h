@@ -51,7 +51,7 @@ public:
         transferFunctionWidget = new QCustomPlot(centralWidget);
         transferFunctionWidget->setObjectName(QString::fromUtf8("transferFunctionWidget"));
         transferFunctionWidget->setGeometry(QRect(20, 50, 431, 361));
-        xAxisRangeSlider = new RangeSlider(Qt::Horizontal, RangeSlider::Option::DoubleHandles, centralWidget);
+        xAxisRangeSlider = new RangeSlider(Qt::Horizontal, RangeSlider::DoubleHandles, centralWidget);
         xAxisRangeSlider->setObjectName(QString::fromUtf8("xAxisRangeSlider"));
         xAxisRangeSlider->setGeometry(QRect(20, 420, 431, 31));
         QtVTKProjectClass->setCentralWidget(centralWidget);
